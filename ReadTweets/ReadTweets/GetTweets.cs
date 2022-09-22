@@ -9,6 +9,8 @@ using System.Net.Http;
 using System.Collections.Generic;
 using System.Text;
 using Newtonsoft.Json;
+using Azure.Messaging.EventHubs.Producer;
+using Azure.Messaging.EventHubs;
 
 namespace ReadTweets
 {
@@ -52,8 +54,45 @@ namespace ReadTweets
                 requestMessage.Headers.Add("Authorization", $"Bearer {accesToken}");
                 var response = await httpClient.SendAsync(requestMessage).ConfigureAwait(false);
                 var finalResponse = response.Content.ReadAsStringAsync().Result;
-                var dynamicObject = JsonConvert.DeserializeObject<dynamic>(finalResponse)!;
-                return new OkObjectResult(dynamicObject);
+                var dynamicObject = JsonConvert.DeserializeObject<List<dynamic>>(finalResponse)!;
+
+                string connectionString = Environment.GetEnvironmentVariable("EVENT_HUB_CS");
+                string eventHubName = Environment.GetEnvironmentVariable("EVENT_HUB_NAME");
+
+                // Create a producer client that you can use to send events to an event hub
+                var producerClient = new EventHubProducerClient(connectionString, eventHubName);
+
+                // Create a batch of events 
+                using EventDataBatch eventBatch = await producerClient.CreateBatchAsync();
+
+                for (int i = 0; i < dynamicObject.Count; i++)
+                {
+                    //var serialisedObject = JsonConvert.SerializeObject(dynamicObject[i]);
+                    TweetData tweetData = new TweetData()
+                    {
+                        id = dynamicObject[i].created_at,
+                        value = dynamicObject[i].text
+                    };
+                    var sendData = JsonConvert.SerializeObject(tweetData);
+                    if (!eventBatch.TryAdd(new EventData(sendData)))
+                    {
+                        // if it is too large for the batch
+                        throw new Exception($"Event {i} is too large for the batch and cannot be sent.");
+                    }
+                }
+
+                try
+                {
+                    // Use the producer client to send the batch of events to the event hub
+                    await producerClient.SendAsync(eventBatch);
+                    Console.WriteLine($"A batch of {dynamicObject.Count} events has been published.");
+                }
+                finally
+                {
+                    await producerClient.DisposeAsync();
+                }
+
+                return new OkResult();
             }
         }
     }

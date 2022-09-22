@@ -23,8 +23,9 @@ namespace ReadTweets
 
             using (var httpClient = new HttpClient())
             {
-                var apiKey = Environment.GetEnvironmentVariable("API_KEY");
-                var apiSecret = Environment.GetEnvironmentVariable("API_SECRET");
+                string apiKey = Environment.GetEnvironmentVariable("API_KEY");
+                string apiSecret = Environment.GetEnvironmentVariable("API_SECRET");
+                string twitterListId = Environment.GetEnvironmentVariable("TWITTER_LIST_ID");
                 var requestMessageGetToken = new HttpRequestMessage
                 {
                     Method = HttpMethod.Post,
@@ -37,20 +38,19 @@ namespace ReadTweets
                 };
 
                 var tokenReqestResponse = await httpClient.SendAsync(requestMessageGetToken).ConfigureAwait(false);
-                var responseContent = tokenReqestResponse.Content.ReadAsStringAsync().Result;
+                string responseContent = tokenReqestResponse.Content.ReadAsStringAsync().Result;
                 var responseObject = JsonConvert.DeserializeObject<Dictionary<string, string>>(responseContent);
-                var accesToken = responseObject["access_token"];
-
-                // Get data from Twitter List : https://twitter.com/i/lists/1572510829198856192
+                string accesToken = responseObject["access_token"];
+                
+                // Get data from Twitter List
                 var requestMessage = new HttpRequestMessage
                 {
                     Method = HttpMethod.Get,
-                    RequestUri = new Uri("https://api.twitter.com/1.1/lists/statuses.json?list_id=1572510829198856192")
+                    RequestUri = new Uri($"https://api.twitter.com/1.1/lists/statuses.json?list_id={twitterListId}"),
                 };
 
                 requestMessage.Headers.Add("Authorization", $"Bearer {accesToken}");
                 var response = await httpClient.SendAsync(requestMessage).ConfigureAwait(false);
-                // Console.WriteLine(response.Content.ReadAsStringAsync().Result);
                 var finalResponse = response.Content.ReadAsStringAsync().Result;
                 var dynamicObject = JsonConvert.DeserializeObject<dynamic>(finalResponse)!;
                 return new OkObjectResult(dynamicObject);

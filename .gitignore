@@ -262,3 +262,5 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
+ReadTweets/ReadTweets/Properties/PublishProfiles/ReadTweets - Web Deploy.pubxml
+ReadTweets/ReadTweets/Properties/PublishProfiles/ReadTweets - Zip Deploy.pubxml

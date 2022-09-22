@@ -16,7 +16,7 @@
     "FUNCTIONS_WORKER_RUNTIME": "dotnet",
     "API_KEY": "###",
     "API_SECRET": "###",
-    "TWITTER_LIST_ID": "1572510829198856192"
+    "TWITTER_LIST_ID": "###"
   }
 }
 ```
